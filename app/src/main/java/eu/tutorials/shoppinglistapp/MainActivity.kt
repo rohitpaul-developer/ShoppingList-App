@@ -22,9 +22,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.dialog
+import androidx.navigation.compose.rememberNavController
 import eu.tutorials.shoppinglistapp.ui.theme.ShoppingListAppTheme
 
 class MainActivity : ComponentActivity() {
@@ -37,17 +43,43 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    ShoppingListApp()
+                    Navigation()
                 }
             }
         }
     }
 }
 
-
-
-@Preview(showBackground = true)
 @Composable
-fun ShoppingListPreview(){
-    ShoppingListApp()
+fun Navigation(){
+    val navController = rememberNavController()
+    val viewModel : LocationViewModel = viewModel()
+    val context = LocalContext.current
+    val locationUtils = LocationUtils(context)
+
+    NavHost(navController = navController, startDestination = "shoppinglistscreen" ){
+        composable("shoppinglistscreen") {
+            val address = viewModel.address.value.firstOrNull()?.formatted_address ?: "No Address"
+            ShoppingListApp(
+                locationUtils = locationUtils,
+                viewModel = viewModel,
+                navController = navController,
+                context = context,
+                address = address
+            )
+        }
+
+        dialog("locationscreen") {
+            viewModel.location.value?.let{it1 ->
+
+                LocationSelectionScreen(location = it1, onLocationSelected = {locationdata ->
+                    viewModel.fetchAddress("${locationdata.latitude},${locationdata.longitude}")
+                    navController.popBackStack()
+                })
+
+            }
+        }
+
+    }
+
 }
